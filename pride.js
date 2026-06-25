@@ -559,3 +559,22 @@ function init() {
 window.addEventListener("resize", init);
 init();
 requestAnimationFrame(loop);
+
+// ── Screenshot control API (used by automated tooling only) ───────────────
+window.__pride = {
+  setFlag(n) {
+    fidx = n % FLAGS.length;
+    applyTargets(FLAGS[fidx]);
+    sparks = new Float32Array(P.length);
+    for (const p of P) {
+      p.x = p.tx; p.y = p.ty;
+      p.r = p.tr; p.g = p.tg; p.b = p.tb;
+      p.a = 1;
+    }
+    nameEl.textContent = FLAGS[fidx].name;
+    setupDisplay();
+    phase = "display";
+    phaseT = performance.now();
+  },
+  get flagCount() { return FLAGS.length; },
+};

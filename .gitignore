@@ -9,3 +9,7 @@ Thumbs.db
 
 # Setup script (temporary)
 setup-git.ps1
+
+# Node
+node_modules/
+package-lock.json

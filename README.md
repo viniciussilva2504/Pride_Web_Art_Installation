@@ -22,6 +22,25 @@
 
 ---
 
+## Gallery
+
+<div align="center">
+
+| | |
+|:---:|:---:|
+| ![Rainbow Pride](screenshots/rainbow.png) | ![Trans Pride](screenshots/trans.png) |
+| *🏳️‍🌈 Rainbow Pride* | *🏳️‍⚧️ Trans Pride* |
+| ![Bisexual Pride](screenshots/bisexual.png) | ![Pansexual Pride](screenshots/pansexual.png) |
+| *Bisexual Pride* | *Pansexual Pride* |
+| ![Non-Binary Pride](screenshots/nonbinary.png) | ![Lesbian Pride](screenshots/lesbian.png) |
+| *Non-Binary Pride* | *Lesbian Pride* |
+| ![Asexual Pride](screenshots/asexual.png) | ![Genderqueer Pride](screenshots/genderqueer.png) |
+| *Asexual Pride* | *Genderqueer Pride* |
+
+</div>
+
+---
+
 ## What is this?
 
 **PRIDE — Web Art Installation** is a zero-dependency, browser-native art piece that transforms the names of LGBTQIA+ heroes, activists, and icons into a living, animated particle field — visually forming each pride flag as an act of remembrance.
