@@ -172,6 +172,15 @@ function computeLayout() {
   canvas.width = vw;
   canvas.height = vh;
 
+  // Position UI label at the midpoint of the space below the flag
+  const uiEl = document.getElementById("ui");
+  if (uiEl) {
+    const flagBottom = F.y + F.h;
+    const uiH        = uiEl.offsetHeight || 36;
+    uiEl.style.top    = Math.round(flagBottom + (vh - flagBottom - uiH) * 0.5) + "px";
+    uiEl.style.bottom = "auto";
+  }
+
   // Rebuild cached vignette gradient
   vignette = ctx.createRadialGradient(
     vw * 0.5,
