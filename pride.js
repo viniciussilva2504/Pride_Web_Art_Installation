@@ -232,12 +232,36 @@ function applyTargets(flag) {
   }
 }
 
-function doScatter() {
-  for (const p of P) {
-    const ang = Math.random() * Math.PI * 2;
-    const spd = 9 + Math.random() * 13;
-    p.vx = Math.cos(ang) * spd;
-    p.vy = Math.sin(ang) * spd;
+// ── Transition system ──────────────────────────────────────────────────────────
+// Alternates: explode → implode → explode → …
+// Starts as "implode" so the first doTransition() flip yields "explode".
+let currentScatterType = "implode";
+let sparks = null; // Float32Array (parallel to P); null until init()
+
+function doTransition() {
+  currentScatterType =
+    currentScatterType === "explode" ? "implode" : "explode";
+
+  if (currentScatterType === "explode") {
+    // Burst outward in random directions
+    for (const p of P) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 9 + Math.random() * 13;
+      p.vx = Math.cos(ang) * spd;
+      p.vy = Math.sin(ang) * spd;
+    }
+  } else {
+    // Implode: all particles rush toward the flag centre
+    const cx = F.x + F.w / 2;
+    const cy = F.y + F.h / 2;
+    for (const p of P) {
+      const dx   = cx - p.x;
+      const dy   = cy - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const spd  = 14 + Math.random() * 10;
+      p.vx = (dx / dist) * spd;
+      p.vy = (dy / dist) * spd;
+    }
   }
 }
 
@@ -276,7 +300,8 @@ function update(ts) {
   } else if (phase === "display" && el >= DUR.display) {
     fidx = (fidx + 1) % FLAGS.length;
     applyTargets(FLAGS[fidx]);
-    doScatter();
+    doTransition();
+    sparks = new Float32Array(P.length); // reset sparks on each flag change
     phase = "scatter";
     phaseT = ts;
   }
@@ -286,21 +311,35 @@ function update(ts) {
   const ch = canvas.height + 42;
 
   if (phase === "scatter") {
+    const imploding = currentScatterType === "implode";
+    const cx = F.x + F.w / 2;
+    const cy = F.y + F.h / 2;
+
     for (const p of P) {
       p.x += p.vx;
       p.y += p.vy;
-      p.vx *= 0.978;
-      p.vy *= 0.978;
-      // asymmetric vertical turbulence — slight upward drift for drama
-      p.vy += (Math.random() - 0.47) * 0.28;
 
-      // toroidal wrap at canvas edges
-      if (p.x < -40) p.x = cw;
-      else if (p.x > cw) p.x = -40;
-      if (p.y < -40) p.y = ch;
-      else if (p.y > ch) p.y = -40;
+      if (imploding) {
+        // Stronger damping + continuous centripetal pull — converges to flag centre
+        p.vx *= 0.962;
+        p.vy *= 0.962;
+        const dx   = cx - p.x;
+        const dy   = cy - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        p.vx += (dx / dist) * 0.35;
+        p.vy += (dy / dist) * 0.35;
+      } else {
+        // Explode: standard damping + vertical turbulence + toroidal wrap
+        p.vx *= 0.978;
+        p.vy *= 0.978;
+        p.vy += (Math.random() - 0.47) * 0.28;
+        if (p.x < -40) p.x = cw;
+        else if (p.x > cw) p.x = -40;
+        if (p.y < -40) p.y = ch;
+        else if (p.y > ch) p.y = -40;
+      }
 
-      // colours blend toward next-flag target during scatter
+      // Colour blending toward next-flag target (both transition types)
       p.r = lerp(p.r, p.tr, 0.043);
       p.g = lerp(p.g, p.tg, 0.043);
       p.b = lerp(p.b, p.tb, 0.043);
@@ -318,22 +357,43 @@ function update(ts) {
       p.a = lerp(p.a, 1, 0.065);
     }
   } else {
-    // 'display' — all flags: each stripe scrolls horizontally in its own direction
-    scrollX += dt * 0.038;
+    // 'display' — all flags: stripes scroll horizontally in alternating directions
+    scrollX += dt * 0.040;
+
+    // ── Position: even stripes → right (+1), odd stripes → left (−1) — equal speed ──
     for (const p of P) {
-      const dir   = stripeScrollDirs[p.si] ?? 1;
-      const speed = 1 + p.si * 0.18;   // deeper stripes move slightly faster
-      const off   = scrollX * speed * dir;
-      const rel   = (((p.bx - F.x + off) % F.w) + F.w) % F.w;
+      const dir = stripeScrollDirs[p.si] ?? 1;
+      const off = scrollX * dir;
+      const rel = (((p.bx - F.x + off) % F.w) + F.w) % F.w;
       p.x = F.x + rel;
       p.y = p.ty + Math.sin(ts * 0.0009 + p.col * 0.12) * 0.55;
     }
 
+    // ── Colour convergence ───────────────────────────────────────────────────────
     for (const p of P) {
       p.r = lerp(p.r, p.tr, 0.09);
       p.g = lerp(p.g, p.tg, 0.09);
       p.b = lerp(p.b, p.tb, 0.09);
       p.a = lerp(p.a, 1, 0.07);
+    }
+
+    // ── Sparse colour sparks: ~1-2 letters per stripe flash white briefly ──────
+    if (sparks) {
+      // ~8 new sparks / second at 60 fps (≈0.13 chance per frame)
+      if (Math.random() < 0.13) {
+        const nStripes = FLAGS[fidx].colors.length;
+        const si       = Math.floor(Math.random() * nStripes);
+        const rowStart = Math.floor((si * F.rows) / nStripes);
+        const rowEnd   = Math.floor(((si + 1) * F.rows) / nStripes);
+        const row      = rowStart + Math.floor(Math.random() * Math.max(1, rowEnd - rowStart));
+        const col      = Math.floor(Math.random() * F.cols);
+        const idx      = row * F.cols + col;
+        if (idx < sparks.length) sparks[idx] = 1.0;
+      }
+      // Decay: ~40-frame (~0.67 s) lifetime per spark
+      for (let i = 0; i < sparks.length; i++) {
+        if (sparks[i] > 0) sparks[i] = Math.max(0, sparks[i] - 0.025);
+      }
     }
   }
 }
@@ -371,10 +431,19 @@ function draw() {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
-  for (const p of P) {
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i];
     if (p.a < 0.015) continue;
+    let R = p.r | 0, G = p.g | 0, B = p.b | 0;
+    // Spark: white flash that fades over ~40 frames
+    if (sparks && sparks[i] > 0) {
+      const t = sparks[i];
+      R = lerp(p.r, 255, t) | 0;
+      G = lerp(p.g, 255, t) | 0;
+      B = lerp(p.b, 255, t) | 0;
+    }
     ctx.globalAlpha = p.a;
-    ctx.fillStyle = `rgb(${p.r | 0},${p.g | 0},${p.b | 0})`;
+    ctx.fillStyle   = `rgb(${R},${G},${B})`;
     ctx.fillText(p.ch, p.x, p.y);
   }
   ctx.globalAlpha = 1;
@@ -397,6 +466,7 @@ function loop(ts) {
 function init() {
   computeLayout();
   initParticles();
+  sparks = new Float32Array(P.length); // allocate spark intensity array
   applyTargets(FLAGS[0]);
   nameEl.textContent = FLAGS[0].name;
   // Force immediate transition from scatter → form on first frame
