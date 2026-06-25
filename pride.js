@@ -25,65 +25,124 @@ const nameEl = document.getElementById("flag-name");
 // ── Source text: hero names + PRIDE keyword ────────────────────────────────
 const WORDS = [
   // ── Stonewall heroes ────────────────────────────────────────────────
-  "MARSHAPJOHNSON",  "PRIDE",
-  "SYLVIARIVERA",    "PRIDE",
-  "MISSMAJOR",       "PRIDE",
-  "STORMEDELA",      "PRIDE",
-  "ZAZUNOVA",        "PRIDE",
-  "JACKIEHORMONA",   "PRIDE",
-  "BIRDIE",          "PRIDE",
-  "CRAIGRODWELL",    "PRIDE",
-  "HARRYHAY",        "PRIDE",
-  "JIMFOURATT",      "PRIDE",
-  "BOBKOHLER",       "PRIDE",
-  "RAYCASTRO",       "PRIDE",
-  "STONEWALLINN",    "PRIDE",
+  "MARSHAPJOHNSON",
+  "PRIDE",
+  "SYLVIARIVERA",
+  "PRIDE",
+  "MISSMAJOR",
+  "PRIDE",
+  "STORMEDELA",
+  "PRIDE",
+  "ZAZUNOVA",
+  "PRIDE",
+  "JACKIEHORMONA",
+  "PRIDE",
+  "BIRDIE",
+  "PRIDE",
+  "CRAIGRODWELL",
+  "PRIDE",
+  "HARRYHAY",
+  "PRIDE",
+  "JIMFOURATT",
+  "PRIDE",
+  "BOBKOHLER",
+  "PRIDE",
+  "RAYCASTRO",
+  "PRIDE",
+  "STONEWALLINN",
+  "PRIDE",
   // ── Writers & poets ─────────────────────────────────────────────────
-  "OSCARWILDE",      "PRIDE",
-  "JAMESBALDWIN",    "PRIDE",
-  "TRUMANCAPOTE",    "PRIDE",
-  "ALLENGINSBERG",   "PRIDE",
-  "WALTWHITMAN",     "PRIDE",
-  "VIRGINIAWOOLF",   "PRIDE",
-  "TENNESSEEWILL",   "PRIDE",
-  "LANGSTONHUGH",    "PRIDE",
-  "GARCIALORC",      "PRIDE",
-  "GOREVIDAL",       "PRIDE",
-  "HILDAHILST",      "PRIDE",
+  "OSCARWILDE",
+  "PRIDE",
+  "JAMESBALDWIN",
+  "PRIDE",
+  "TRUMANCAPOTE",
+  "PRIDE",
+  "ALLENGINSBERG",
+  "PRIDE",
+  "WALTWHITMAN",
+  "PRIDE",
+  "VIRGINIAWOOLF",
+  "PRIDE",
+  "TENNESSEEWILL",
+  "PRIDE",
+  "LANGSTONHUGH",
+  "PRIDE",
+  "GARCIALORC",
+  "PRIDE",
+  "GOREVIDAL",
+  "PRIDE",
+  "HILDAHILST",
+  "PRIDE",
   // ── Musicians & pop icons ────────────────────────────────────────────
-  "ELTONJOHN",       "PRIDE",
-  "FREDDIEMERCURY",  "PRIDE",
-  "GEORGEMICHAEL",   "PRIDE",
-  "DAVIDBOWIE",      "PRIDE",
-  "BOYGEORGE",       "PRIDE",
-  "RICKYMARTIN",     "PRIDE",
-  "RUPAUL",          "PRIDE",
-  "SAMSMITH",        "PRIDE",
-  "FRANKOCEAN",      "PRIDE",
-  "TROYESIVAN",      "PRIDE",
-  "GRACEJONES",      "PRIDE",
-  "KDLANG",          "PRIDE",
-  "LILNASX",         "PRIDE",
-  "KIMPETRAS",       "PRIDE",
-  "JANELLEMONAE",    "PRIDE",
-  "HARVEYMILK",      "PRIDE",
+  "ELTONJOHN",
+  "PRIDE",
+  "FREDDIEMERCURY",
+  "PRIDE",
+  "GEORGEMICHAEL",
+  "PRIDE",
+  "DAVIDBOWIE",
+  "PRIDE",
+  "BOYGEORGE",
+  "PRIDE",
+  "RICKYMARTIN",
+  "PRIDE",
+  "RUPAUL",
+  "PRIDE",
+  "SAMSMITH",
+  "PRIDE",
+  "FRANKOCEAN",
+  "PRIDE",
+  "TROYESIVAN",
+  "PRIDE",
+  "GRACEJONES",
+  "PRIDE",
+  "KDLANG",
+  "PRIDE",
+  "LILNASX",
+  "PRIDE",
+  "KIMPETRAS",
+  "PRIDE",
+  "JANELLEMONAE",
+  "PRIDE",
+  "HARVEYMILK",
+  "PRIDE",
   // ── Divas & gay icons ───────────────────────────────────────────────
-  "JUDYGARLAND",     "PRIDE",
-  "MADONNA",         "PRIDE",
-  "LADYGAGA",        "PRIDE",
-  "LIZAMINELLI",     "PRIDE",
-  "BARBRA",          "PRIDE",
-  "CHER",            "PRIDE",
-  "DONNASUMMER",     "PRIDE",
+  "JUDYGARLAND",
+  "PRIDE",
+  "MADONNA",
+  "PRIDE",
+  "LADYGAGA",
+  "PRIDE",
+  "LIZAMINELLI",
+  "PRIDE",
+  "BARBRA",
+  "PRIDE",
+  "CHER",
+  "PRIDE",
+  "DONNASUMMER",
+  "PRIDE",
   // ── Cultural icons ───────────────────────────────────────────────────
-  "ALANTURING",      "PRIDE",
-  "BAYARDRUSTIN",    "PRIDE",
-  "ANDYWARHOL",      "PRIDE",
-  "KEITHHARING",     "PRIDE",
+  "ALANTURING",
+  "PRIDE",
+  "BAYARDRUSTIN",
+  "PRIDE",
+  "ANDYWARHOL",
+  "PRIDE",
+  "KEITHHARING",
+  "PRIDE",
   // ── Keywords ────────────────────────────────────────────────────────
-  "FREEDOM", "LOVE",     "RESIST",   "RISE",
-  "TRANS",   "GAY",      "QUEER",    "POWER",
-  "EQUAL",   "STRONG",   "TOGETHER",
+  "FREEDOM",
+  "LOVE",
+  "RESIST",
+  "RISE",
+  "TRANS",
+  "GAY",
+  "QUEER",
+  "POWER",
+  "EQUAL",
+  "STRONG",
+  "TOGETHER",
 ];
 
 let SRC = "";
@@ -176,8 +235,9 @@ function computeLayout() {
   const uiEl = document.getElementById("ui");
   if (uiEl) {
     const flagBottom = F.y + F.h;
-    const uiH        = uiEl.offsetHeight || 36;
-    uiEl.style.top    = Math.round(flagBottom + (vh - flagBottom - uiH) * 0.5) + "px";
+    const uiH = uiEl.offsetHeight || 36;
+    uiEl.style.top =
+      Math.round(flagBottom + (vh - flagBottom - uiH) * 0.5) + "px";
     uiEl.style.bottom = "auto";
   }
 
@@ -248,8 +308,7 @@ let currentScatterType = "implode";
 let sparks = null; // Float32Array (parallel to P); null until init()
 
 function doTransition() {
-  currentScatterType =
-    currentScatterType === "explode" ? "implode" : "explode";
+  currentScatterType = currentScatterType === "explode" ? "implode" : "explode";
 
   if (currentScatterType === "explode") {
     // Burst outward in random directions
@@ -264,10 +323,10 @@ function doTransition() {
     const cx = F.x + F.w / 2;
     const cy = F.y + F.h / 2;
     for (const p of P) {
-      const dx   = cx - p.x;
-      const dy   = cy - p.y;
+      const dx = cx - p.x;
+      const dy = cy - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const spd  = 14 + Math.random() * 10;
+      const spd = 14 + Math.random() * 10;
       p.vx = (dx / dist) * spd;
       p.vy = (dy / dist) * spd;
     }
@@ -305,7 +364,9 @@ function update(ts) {
     scrollX = 0;
     // Alternating directions: even stripes scroll right, odd stripes scroll left
     const n = FLAGS[fidx].colors.length;
-    stripeScrollDirs = Array.from({ length: n }, (_, i) => (i % 2 === 0 ? 1 : -1));
+    stripeScrollDirs = Array.from({ length: n }, (_, i) =>
+      i % 2 === 0 ? 1 : -1,
+    );
   } else if (phase === "display" && el >= DUR.display) {
     fidx = (fidx + 1) % FLAGS.length;
     applyTargets(FLAGS[fidx]);
@@ -332,8 +393,8 @@ function update(ts) {
         // Stronger damping + continuous centripetal pull — converges to flag centre
         p.vx *= 0.962;
         p.vy *= 0.962;
-        const dx   = cx - p.x;
-        const dy   = cy - p.y;
+        const dx = cx - p.x;
+        const dy = cy - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         p.vx += (dx / dist) * 0.35;
         p.vy += (dy / dist) * 0.35;
@@ -367,7 +428,7 @@ function update(ts) {
     }
   } else {
     // 'display' — all flags: stripes scroll horizontally in alternating directions
-    scrollX += dt * 0.040;
+    scrollX += dt * 0.04;
 
     // ── Position: even stripes → right (+1), odd stripes → left (−1) — equal speed ──
     for (const p of P) {
@@ -391,12 +452,13 @@ function update(ts) {
       // ~8 new sparks / second at 60 fps (≈0.13 chance per frame)
       if (Math.random() < 0.13) {
         const nStripes = FLAGS[fidx].colors.length;
-        const si       = Math.floor(Math.random() * nStripes);
+        const si = Math.floor(Math.random() * nStripes);
         const rowStart = Math.floor((si * F.rows) / nStripes);
-        const rowEnd   = Math.floor(((si + 1) * F.rows) / nStripes);
-        const row      = rowStart + Math.floor(Math.random() * Math.max(1, rowEnd - rowStart));
-        const col      = Math.floor(Math.random() * F.cols);
-        const idx      = row * F.cols + col;
+        const rowEnd = Math.floor(((si + 1) * F.rows) / nStripes);
+        const row =
+          rowStart + Math.floor(Math.random() * Math.max(1, rowEnd - rowStart));
+        const col = Math.floor(Math.random() * F.cols);
+        const idx = row * F.cols + col;
         if (idx < sparks.length) sparks[idx] = 1.0;
       }
       // Decay: ~40-frame (~0.67 s) lifetime per spark
@@ -443,7 +505,9 @@ function draw() {
   for (let i = 0; i < P.length; i++) {
     const p = P[i];
     if (p.a < 0.015) continue;
-    let R = p.r | 0, G = p.g | 0, B = p.b | 0;
+    let R = p.r | 0,
+      G = p.g | 0,
+      B = p.b | 0;
     // Spark: white flash that fades over ~40 frames
     if (sparks && sparks[i] > 0) {
       const t = sparks[i];
@@ -452,7 +516,7 @@ function draw() {
       B = lerp(p.b, 255, t) | 0;
     }
     ctx.globalAlpha = p.a;
-    ctx.fillStyle   = `rgb(${R},${G},${B})`;
+    ctx.fillStyle = `rgb(${R},${G},${B})`;
     ctx.fillText(p.ch, p.x, p.y);
   }
   ctx.globalAlpha = 1;
