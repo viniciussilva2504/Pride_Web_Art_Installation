@@ -2,7 +2,6 @@ const canvas  = document.getElementById("c");
 const ctx     = canvas.getContext("2d");
 const nameEl  = document.getElementById("flag-name");
 
-// ── Source text (Stonewall heroes) ────────────────────────────────────────
 const WORDS = [
   "MARSHAPJOHNSON", "PRIDE", "SYLVIARIVERA", "PRIDE",
   "MISSMAJOR",      "PRIDE", "STORMEDELA",   "PRIDE",
@@ -19,10 +18,16 @@ while (SRC.length < 10000) {
   for (const w of WORDS) SRC += w;
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────
+// ── Flag definitions ──────────────────────────────────────────────────────
+const FLAGS = [
+  { name: "RAINBOW PRIDE",  colors: ["#E40303","#FF8C00","#FFED00","#008026","#004DFF","#750787"] },
+  { name: "TRANS PRIDE",    colors: ["#55CDFC","#F7A8B8","#FFFFFF","#F7A8B8","#55CDFC"] },
+  { name: "BISEXUAL PRIDE", colors: ["#D60270","#D60270","#9B4F96","#0038A8","#0038A8"] },
+  { name: "PANSEXUAL PRIDE",colors: ["#FF218C","#FFD800","#21B1FF"] },
+];
+
 const FONT_SIZE = 10, GX = 7.9, GY = 12.9;
 
-// ── Layout ────────────────────────────────────────────────────────────────
 let F = {};
 
 function computeLayout() {
@@ -39,7 +44,6 @@ function computeLayout() {
   canvas.height = vh;
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────
 const lerp = (a, b, t) => a + (b - a) * t;
 
 function hexToRGB(hex) {
@@ -47,7 +51,6 @@ function hexToRGB(hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-// ── Particles ─────────────────────────────────────────────────────────────
 let P = [];
 
 function initParticles() {
@@ -58,12 +61,26 @@ function initParticles() {
       ch: SRC[i % SRC.length],
       x: F.x + Math.random() * F.w,
       y: F.y + Math.random() * F.h,
-      r: 180, g: 180, b: 180, a: 1,
+      r: 120, g: 120, b: 120, a: 0,
+      tx: 0, ty: 0, tr: 120, tg: 120, tb: 120,
       vx: (Math.random() - 0.5) * 14,
       vy: (Math.random() - 0.5) * 14,
-      col: i % F.cols,
-      row: (i / F.cols) | 0,
+      col: i % F.cols, row: (i / F.cols) | 0,
+      bx: 0, si: 0,
     };
+  }
+}
+
+// ── Formation ─────────────────────────────────────────────────────────────
+function applyTargets(flag) {
+  const n = flag.colors.length;
+  const sh = F.rows / n;
+  for (const p of P) {
+    p.si = Math.min((p.row / sh) | 0, n - 1);
+    p.tx = F.x + p.col * GX;
+    p.ty = F.y + p.row * GY;
+    p.bx = p.tx;
+    [p.tr, p.tg, p.tb] = hexToRGB(flag.colors[p.si]);
   }
 }
 
@@ -76,7 +93,6 @@ function doScatter() {
   }
 }
 
-// ── Draw ──────────────────────────────────────────────────────────────────
 function draw() {
   ctx.fillStyle = "#060606";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -93,6 +109,7 @@ function draw() {
   ctx.textBaseline = "top";
 
   for (const p of P) {
+    if (p.a < 0.01) continue;
     ctx.globalAlpha = p.a;
     ctx.fillStyle = `rgb(${p.r | 0},${p.g | 0},${p.b | 0})`;
     ctx.fillText(p.ch, p.x, p.y);
@@ -100,15 +117,15 @@ function draw() {
   ctx.globalAlpha = 1;
 }
 
-// ── Loop ──────────────────────────────────────────────────────────────────
+// ── Loop: ease toward formation (static, no state machine yet) ─────────────
 function loop(ts) {
-  const cw = canvas.width + 42, ch = canvas.height + 42;
   for (const p of P) {
-    p.x += p.vx; p.y += p.vy;
-    p.vx *= 0.978; p.vy *= 0.978;
-    p.vy += (Math.random() - 0.47) * 0.28;
-    if (p.x < -40) p.x = cw; else if (p.x > cw) p.x = -40;
-    if (p.y < -40) p.y = ch; else if (p.y > ch) p.y = -40;
+    p.x = lerp(p.x, p.tx, 0.06);
+    p.y = lerp(p.y, p.ty, 0.06);
+    p.r = lerp(p.r, p.tr, 0.07);
+    p.g = lerp(p.g, p.tg, 0.07);
+    p.b = lerp(p.b, p.tb, 0.07);
+    p.a = lerp(p.a, 1, 0.06);
   }
   draw();
   requestAnimationFrame(loop);
@@ -117,8 +134,8 @@ function loop(ts) {
 function init() {
   computeLayout();
   initParticles();
-  doScatter();
-  nameEl.textContent = "STONEWALL";
+  applyTargets(FLAGS[0]);
+  nameEl.textContent = FLAGS[0].name;
 }
 
 window.addEventListener("resize", init);
