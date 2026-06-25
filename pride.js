@@ -154,32 +154,33 @@ while (SRC.length < 10000) {
 const FLAGS = [
   {
     name: "RAINBOW PRIDE",
-    scroll: true,
+    definition: "LOVE · LIBERATION · SOLIDARITY · UNITY FOR ALL",
     colors: ["#E40303", "#FF8C00", "#FFED00", "#008026", "#004DFF", "#750787"],
   },
   {
     name: "TRANS PRIDE",
-    scroll: false,
+    definition: "GENDER BEYOND THE BINARY · BE WHO YOU ARE",
     colors: ["#55CDFC", "#F7A8B8", "#FFFFFF", "#F7A8B8", "#55CDFC"],
   },
   {
     name: "BISEXUAL PRIDE",
-    scroll: false,
+    definition: "ATTRACTION BEYOND GENDER BINARIES · LOVE IS LOVE",
     colors: ["#D60270", "#D60270", "#9B4F96", "#0038A8", "#0038A8"],
   },
   {
     name: "PANSEXUAL PRIDE",
-    scroll: false,
+    definition: "LOVE REGARDLESS OF GENDER OR IDENTITY",
     colors: ["#FF218C", "#FFD800", "#21B1FF"],
   },
   {
     name: "NON-BINARY PRIDE",
-    scroll: false,
+    definition: "BEYOND HE AND SHE · YOUR IDENTITY IS VALID",
+    defStripe: 2,
     colors: ["#FCF434", "#FFFFFF", "#9C59D1", "#2D2D2D"],
   },
   {
     name: "LESBIAN PRIDE",
-    scroll: false,
+    definition: "WOMEN WHO LOVE WOMEN · SAPPHIC AND PROUD",
     colors: [
       "#D52D00",
       "#EF7627",
@@ -192,12 +193,13 @@ const FLAGS = [
   },
   {
     name: "ASEXUAL PRIDE",
-    scroll: false,
+    definition: "LITTLE OR NO SEXUAL ATTRACTION · ACE AND VALID",
+    defStripe: 3,
     colors: ["#1A1A1A", "#A3A3A3", "#FFFFFF", "#810081"],
   },
   {
     name: "GENDERQUEER PRIDE",
-    scroll: false,
+    definition: "REJECTING GENDER NORMS · FLUID AND FREE",
     colors: ["#B77FDD", "#FFFFFF", "#498023"],
   },
 ];
@@ -292,57 +294,94 @@ function initParticles() {
 function applyTargets(flag) {
   const n = flag.colors.length;
   const sh = F.rows / n; // rows per stripe (float)
+  const driftProb = 0.1 + Math.random() * 0.15; // 10–25 % of letters drift
   for (const p of P) {
     p.si = Math.min((p.row / sh) | 0, n - 1);
     p.tx = F.x + p.col * GX;
     p.ty = F.y + p.row * GY;
     p.bx = p.tx;
     [p.tr, p.tg, p.tb] = hexToRGB(flag.colors[p.si]);
+    // Per-particle random colour speed — creates gradual, uneven colour spread
+    p.colorSpeed = 0.018 + Math.random() * 0.052;
+    // Horizontal drift: random subset changes every transition
+    p.isDrifter = Math.random() < driftProb;
+    p.driftAmt = p.isDrifter
+      ? (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 13)
+      : 0;
+    // Reset definition overlay (populated by setupDisplay)
+    p.defCh = null;
+  }
+}
+
+// ── Display setup: dance params + definition text overlay ─────────────────
+function setupDisplay() {
+  const flag = FLAGS[fidx];
+  const n = flag.colors.length;
+
+  // Assign individual dance parameters to every particle
+  for (const p of P) {
+    p.defCh = null;
+    const isDancer = Math.random() < 0.25;
+    p.danceAmp    = isDancer ? 1.5 + Math.random() * 2.5 : 0.1 + Math.random() * 0.4;
+    p.danceFreqX  = 0.00035 + Math.random() * 0.00070;
+    p.danceFreqY  = 0.00028 + Math.random() * 0.00055;
+    p.dancePhaseX = Math.random() * Math.PI * 2;
+    p.dancePhaseY = Math.random() * Math.PI * 2;
+  }
+
+  // Write definition into a randomly chosen stripe
+  const def = flag.definition;
+  if (!def) return;
+
+  const defStripeIdx = flag.defStripe ?? Math.floor(Math.random() * n);
+  const rowStart = Math.floor((defStripeIdx * F.rows) / n);
+  const rowEnd   = Math.floor(((defStripeIdx + 1) * F.rows) / n);
+  const midRow   = Math.floor((rowStart + rowEnd) / 2);
+
+  // Pick the flag colour with maximum luminance contrast to the chosen stripe
+  const [sr, sg, sb] = hexToRGB(flag.colors[defStripeIdx]);
+  const stripeLum = 0.2126 * sr + 0.7152 * sg + 0.0722 * sb;
+  let bestDist = -1, contrastIdx = (defStripeIdx + 1) % n;
+  for (let ci = 0; ci < n; ci++) {
+    if (ci === defStripeIdx) continue;
+    const [cr, cg, cb] = hexToRGB(flag.colors[ci]);
+    const d = Math.abs(0.2126 * cr + 0.7152 * cg + 0.0722 * cb - stripeLum);
+    if (d > bestDist) { bestDist = d; contrastIdx = ci; }
+  }
+  let [defR, defG, defB] = hexToRGB(flag.colors[contrastIdx]);
+  // Fallback to white/dark if contrast is still too low
+  if (bestDist < 40) {
+    const v = stripeLum > 127 ? 20 : 235;
+    defR = defG = defB = v;
+  }
+
+  // Centre definition text in the middle row of the chosen stripe
+  const startCol = Math.max(0, Math.floor((F.cols - def.length) / 2));
+  for (let ci = 0; ci < def.length; ci++) {
+    const col = startCol + ci;
+    if (col >= F.cols) break;
+    const idx = midRow * F.cols + col;
+    if (idx < P.length) {
+      P[idx].defCh    = def[ci];
+      P[idx].defR     = defR;
+      P[idx].defG     = defG;
+      P[idx].defB     = defB;
+      P[idx].danceAmp = 0; // keep definition letters still
+    }
   }
 }
 
 // ── Transition system ──────────────────────────────────────────────────────────
-// Alternates: explode → implode → explode → …
-// Starts as "implode" so the first doTransition() flip yields "explode".
-let currentScatterType = "implode";
 let sparks = null; // Float32Array (parallel to P); null until init()
-
-function doTransition() {
-  currentScatterType = currentScatterType === "explode" ? "implode" : "explode";
-
-  if (currentScatterType === "explode") {
-    // Burst outward in random directions
-    for (const p of P) {
-      const ang = Math.random() * Math.PI * 2;
-      const spd = 9 + Math.random() * 13;
-      p.vx = Math.cos(ang) * spd;
-      p.vy = Math.sin(ang) * spd;
-    }
-  } else {
-    // Implode: all particles rush toward the flag centre
-    const cx = F.x + F.w / 2;
-    const cy = F.y + F.h / 2;
-    for (const p of P) {
-      const dx = cx - p.x;
-      const dy = cy - p.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const spd = 14 + Math.random() * 10;
-      p.vx = (dx / dist) * spd;
-      p.vy = (dy / dist) * spd;
-    }
-  }
-}
 
 // ── State machine ──────────────────────────────────────────────────────────
 let fidx = 0;
-let phase = "scatter";
+let phase = "transition";
 let phaseT = 0;
 let lastTs = 0;
-let scrollX = 0;
-let stripeScrollDirs = []; // per-stripe direction: +1 (right) or -1 (left)
 
 // Duration of each phase in milliseconds
-const DUR = { scatter: 1700, form: 2400, display: 8200 };
+const DUR = { transition: 2600, display: 8200 };
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -353,103 +392,64 @@ function update(ts) {
   const fl = FLAGS[fidx];
 
   // ── State transitions ────────────────────────────────────────────────────
-  if (phase === "scatter" && el >= DUR.scatter) {
-    phase = "form";
-    phaseT = ts;
-    scrollX = 0;
-    nameEl.textContent = fl.name;
-  } else if (phase === "form" && el >= DUR.form) {
+  if (phase === "transition" && el >= DUR.transition) {
     phase = "display";
     phaseT = ts;
-    scrollX = 0;
-    // Alternating directions: even stripes scroll right, odd stripes scroll left
-    const n = FLAGS[fidx].colors.length;
-    stripeScrollDirs = Array.from({ length: n }, (_, i) =>
-      i % 2 === 0 ? 1 : -1,
-    );
+    nameEl.textContent = fl.name;
+    setupDisplay();
   } else if (phase === "display" && el >= DUR.display) {
     fidx = (fidx + 1) % FLAGS.length;
     applyTargets(FLAGS[fidx]);
-    doTransition();
     sparks = new Float32Array(P.length); // reset sparks on each flag change
-    phase = "scatter";
+    phase = "transition";
     phaseT = ts;
   }
 
   // ── Particle physics ─────────────────────────────────────────────────────
-  const cw = canvas.width + 42;
-  const ch = canvas.height + 42;
-
-  if (phase === "scatter") {
-    const imploding = currentScatterType === "implode";
-    const cx = F.x + F.w / 2;
-    const cy = F.y + F.h / 2;
-
+  if (phase === "transition") {
+    const t = Math.min(el / DUR.transition, 1);
     for (const p of P) {
-      p.x += p.vx;
-      p.y += p.vy;
-
-      if (imploding) {
-        // Stronger damping + continuous centripetal pull — converges to flag centre
-        p.vx *= 0.962;
-        p.vy *= 0.962;
-        const dx = cx - p.x;
-        const dy = cy - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        p.vx += (dx / dist) * 0.35;
-        p.vy += (dy / dist) * 0.35;
-      } else {
-        // Explode: standard damping + vertical turbulence + toroidal wrap
-        p.vx *= 0.978;
-        p.vy *= 0.978;
-        p.vy += (Math.random() - 0.47) * 0.28;
-        if (p.x < -40) p.x = cw;
-        else if (p.x > cw) p.x = -40;
-        if (p.y < -40) p.y = ch;
-        else if (p.y > ch) p.y = -40;
+      // Subtle horizontal drift: ease in (0→40%) hold, ease out (40→100%)
+      let driftOffset = 0;
+      if (p.isDrifter && p.driftAmt !== 0) {
+        if (t < 0.4) {
+          driftOffset = p.driftAmt * (t / 0.4);
+        } else {
+          driftOffset = p.driftAmt * (1 - (t - 0.4) / 0.6);
+        }
       }
+      p.x = p.tx + driftOffset;
+      p.y = p.ty;
 
-      // Colour blending toward next-flag target (both transition types)
-      p.r = lerp(p.r, p.tr, 0.043);
-      p.g = lerp(p.g, p.tg, 0.043);
-      p.b = lerp(p.b, p.tb, 0.043);
-      p.a = lerp(p.a, 1, 0.04);
-    }
-  } else if (phase === "form") {
-    const t = el / DUR.form;
-    const spd = 0.05 + t * 0.058; // acceleration as formation completes
-    for (const p of P) {
-      p.x = lerp(p.x, p.tx, spd);
-      p.y = lerp(p.y, p.ty, spd);
-      p.r = lerp(p.r, p.tr, 0.075);
-      p.g = lerp(p.g, p.tg, 0.075);
-      p.b = lerp(p.b, p.tb, 0.075);
-      p.a = lerp(p.a, 1, 0.065);
+      // Gradual colour change at each letter's own random speed
+      p.r = lerp(p.r, p.tr, p.colorSpeed);
+      p.g = lerp(p.g, p.tg, p.colorSpeed);
+      p.b = lerp(p.b, p.tb, p.colorSpeed);
+      p.a = lerp(p.a, 1, 0.07);
     }
   } else {
-    // 'display' — all flags: stripes scroll horizontally in alternating directions
-    scrollX += dt * 0.04;
-
-    // ── Position: even stripes → right (+1), odd stripes → left (−1) — equal speed ──
+    // 'display' — organic letter dance + definition text overlay
     for (const p of P) {
-      const dir = stripeScrollDirs[p.si] ?? 1;
-      const off = scrollX * dir;
-      const rel = (((p.bx - F.x + off) % F.w) + F.w) % F.w;
-      p.x = F.x + rel;
-      p.y = p.ty + Math.sin(ts * 0.0009 + p.col * 0.12) * 0.55;
+      p.x = p.tx + Math.sin(ts * p.danceFreqX + p.dancePhaseX) * p.danceAmp;
+      p.y = p.ty + Math.sin(ts * p.danceFreqY + p.dancePhaseY) * p.danceAmp * 0.6;
     }
 
-    // ── Colour convergence ───────────────────────────────────────────────────────
+    // ── Colour convergence: definition letters → contrast colour, others → stripe ──
     for (const p of P) {
-      p.r = lerp(p.r, p.tr, 0.09);
-      p.g = lerp(p.g, p.tg, 0.09);
-      p.b = lerp(p.b, p.tb, 0.09);
+      if (p.defCh !== null) {
+        p.r = lerp(p.r, p.defR, 0.04);
+        p.g = lerp(p.g, p.defG, 0.04);
+        p.b = lerp(p.b, p.defB, 0.04);
+      } else {
+        p.r = lerp(p.r, p.tr, 0.09);
+        p.g = lerp(p.g, p.tg, 0.09);
+        p.b = lerp(p.b, p.tb, 0.09);
+      }
       p.a = lerp(p.a, 1, 0.07);
     }
 
-    // ── Sparse colour sparks: ~1-2 letters per stripe flash white briefly ──────
+    // ── Sparse white flashes ─────────────────────────────────────────────
     if (sparks) {
-      // ~8 new sparks / second at 60 fps (≈0.13 chance per frame)
       if (Math.random() < 0.13) {
         const nStripes = FLAGS[fidx].colors.length;
         const si = Math.floor(Math.random() * nStripes);
@@ -461,7 +461,6 @@ function update(ts) {
         const idx = row * F.cols + col;
         if (idx < sparks.length) sparks[idx] = 1.0;
       }
-      // Decay: ~40-frame (~0.67 s) lifetime per spark
       for (let i = 0; i < sparks.length; i++) {
         if (sparks[i] > 0) sparks[i] = Math.max(0, sparks[i] - 0.025);
       }
@@ -517,7 +516,7 @@ function draw() {
     }
     ctx.globalAlpha = p.a;
     ctx.fillStyle = `rgb(${R},${G},${B})`;
-    ctx.fillText(p.ch, p.x, p.y);
+    ctx.fillText(phase === "display" && p.defCh ? p.defCh : p.ch, p.x, p.y);
   }
   ctx.globalAlpha = 1;
 
@@ -539,12 +538,21 @@ function loop(ts) {
 function init() {
   computeLayout();
   initParticles();
-  sparks = new Float32Array(P.length); // allocate spark intensity array
+  sparks = new Float32Array(P.length);
   applyTargets(FLAGS[0]);
+  // Snap all particles to their starting positions and colours
+  for (const p of P) {
+    p.x = p.tx;
+    p.y = p.ty;
+    p.r = p.tr;
+    p.g = p.tg;
+    p.b = p.tb;
+    p.a = 0; // fade in during display
+  }
   nameEl.textContent = FLAGS[0].name;
-  // Force immediate transition from scatter → form on first frame
-  phase = "scatter";
-  phaseT = performance.now() - DUR.scatter;
+  phase = "display";
+  phaseT = performance.now();
+  setupDisplay();
   lastTs = performance.now();
 }
 
