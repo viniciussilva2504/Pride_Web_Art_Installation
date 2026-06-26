@@ -3,7 +3,7 @@
 # ✦ PRIDE — Web Art Installation
 
 ### *An interactive digital memorial celebrating the LGBTQIA+ movement through living typography*
-# *https://pride-web-art-installation.vercel.app/*
+#### *https://pride-web-art-installation.vercel.app/*
 
 [![Live Demo](https://img.shields.io/badge/▶%20Live%20Demo-View%20Online-blueviolet?style=for-the-badge)](https://github.com/viniciussilva2504/Pride_Web_Art_Installation)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
