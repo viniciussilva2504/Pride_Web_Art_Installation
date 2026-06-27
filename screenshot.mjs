@@ -11,21 +11,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "screenshots");
 
 const FLAGS = [
-  { slug: "rainbow",    label: "Rainbow Pride" },
-  { slug: "trans",      label: "Trans Pride" },
-  { slug: "bisexual",   label: "Bisexual Pride" },
-  { slug: "pansexual",  label: "Pansexual Pride" },
-  { slug: "nonbinary",  label: "Non-Binary Pride" },
-  { slug: "lesbian",    label: "Lesbian Pride" },
-  { slug: "asexual",    label: "Asexual Pride" },
-  { slug: "genderqueer",label: "Genderqueer Pride" },
+  { slug: "rainbow", label: "Rainbow Pride" },
+  { slug: "trans", label: "Trans Pride" },
+  { slug: "bisexual", label: "Bisexual Pride" },
+  { slug: "pansexual", label: "Pansexual Pride" },
+  { slug: "nonbinary", label: "Non-Binary Pride" },
+  { slug: "lesbian", label: "Lesbian Pride" },
+  { slug: "asexual", label: "Asexual Pride" },
+  { slug: "genderqueer", label: "Genderqueer Pride" },
 ];
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
 
   const browser = await chromium.launch();
-  const page    = await browser.newPage();
+  const page = await browser.newPage();
   await page.setViewportSize({ width: 1440, height: 900 });
 
   const url = "file:///" + __dirname.replace(/\\/g, "/") + "/index.html";

@@ -22,6 +22,9 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 const nameEl = document.getElementById("flag-name");
 
+// ── Theme ──────────────────────────────────────────────────────────────────
+let isDark = true;
+
 // ── Source text: hero names + PRIDE keyword ────────────────────────────────
 const WORDS = [
   // ── Stonewall heroes ────────────────────────────────────────────────
@@ -322,9 +325,11 @@ function setupDisplay() {
   for (const p of P) {
     p.defCh = null;
     const isDancer = Math.random() < 0.25;
-    p.danceAmp    = isDancer ? 1.5 + Math.random() * 2.5 : 0.1 + Math.random() * 0.4;
-    p.danceFreqX  = 0.00035 + Math.random() * 0.00070;
-    p.danceFreqY  = 0.00028 + Math.random() * 0.00055;
+    p.danceAmp = isDancer
+      ? 1.5 + Math.random() * 2.5
+      : 0.1 + Math.random() * 0.4;
+    p.danceFreqX = 0.00035 + Math.random() * 0.0007;
+    p.danceFreqY = 0.00028 + Math.random() * 0.00055;
     p.dancePhaseX = Math.random() * Math.PI * 2;
     p.dancePhaseY = Math.random() * Math.PI * 2;
   }
@@ -335,18 +340,22 @@ function setupDisplay() {
 
   const defStripeIdx = flag.defStripe ?? Math.floor(Math.random() * n);
   const rowStart = Math.floor((defStripeIdx * F.rows) / n);
-  const rowEnd   = Math.floor(((defStripeIdx + 1) * F.rows) / n);
-  const midRow   = Math.floor((rowStart + rowEnd) / 2);
+  const rowEnd = Math.floor(((defStripeIdx + 1) * F.rows) / n);
+  const midRow = Math.floor((rowStart + rowEnd) / 2);
 
   // Pick the flag colour with maximum luminance contrast to the chosen stripe
   const [sr, sg, sb] = hexToRGB(flag.colors[defStripeIdx]);
   const stripeLum = 0.2126 * sr + 0.7152 * sg + 0.0722 * sb;
-  let bestDist = -1, contrastIdx = (defStripeIdx + 1) % n;
+  let bestDist = -1,
+    contrastIdx = (defStripeIdx + 1) % n;
   for (let ci = 0; ci < n; ci++) {
     if (ci === defStripeIdx) continue;
     const [cr, cg, cb] = hexToRGB(flag.colors[ci]);
     const d = Math.abs(0.2126 * cr + 0.7152 * cg + 0.0722 * cb - stripeLum);
-    if (d > bestDist) { bestDist = d; contrastIdx = ci; }
+    if (d > bestDist) {
+      bestDist = d;
+      contrastIdx = ci;
+    }
   }
   let [defR, defG, defB] = hexToRGB(flag.colors[contrastIdx]);
   // Fallback to white/dark if contrast is still too low
@@ -362,10 +371,10 @@ function setupDisplay() {
     if (col >= F.cols) break;
     const idx = midRow * F.cols + col;
     if (idx < P.length) {
-      P[idx].defCh    = def[ci];
-      P[idx].defR     = defR;
-      P[idx].defG     = defG;
-      P[idx].defB     = defB;
+      P[idx].defCh = def[ci];
+      P[idx].defR = defR;
+      P[idx].defG = defG;
+      P[idx].defB = defB;
       P[idx].danceAmp = 0; // keep definition letters still
     }
   }
@@ -431,7 +440,8 @@ function update(ts) {
     // 'display' — organic letter dance + definition text overlay
     for (const p of P) {
       p.x = p.tx + Math.sin(ts * p.danceFreqX + p.dancePhaseX) * p.danceAmp;
-      p.y = p.ty + Math.sin(ts * p.danceFreqY + p.dancePhaseY) * p.danceAmp * 0.6;
+      p.y =
+        p.ty + Math.sin(ts * p.danceFreqY + p.dancePhaseY) * p.danceAmp * 0.6;
     }
 
     // ── Colour convergence: definition letters → contrast colour, others → stripe ──
@@ -471,21 +481,21 @@ function update(ts) {
 // ── Draw ───────────────────────────────────────────────────────────────────
 function draw() {
   // Background
-  ctx.fillStyle = "#060606";
+  ctx.fillStyle = isDark ? "#060606" : "#f0f0f0";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Flag outline — transparent dashed border delimiting the flag area
   ctx.save();
   ctx.setLineDash([4, 6]);
-  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.strokeStyle = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)";
   ctx.lineWidth = 1;
   ctx.strokeRect(F.x, F.y, F.w, F.h);
   ctx.restore();
 
   // Subtitle above the flag
   ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#ffffff";
+  ctx.globalAlpha = isDark ? 0.12 : 0.18;
+  ctx.fillStyle = isDark ? "#ffffff" : "#000000";
   ctx.font = `bold 10px 'Courier New',monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
@@ -520,8 +530,8 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // Vignette overlay (cinematic framing)
-  if (vignette) {
+  // Vignette overlay (cinematic framing — dark mode only)
+  if (isDark && vignette) {
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
@@ -560,6 +570,19 @@ window.addEventListener("resize", init);
 init();
 requestAnimationFrame(loop);
 
+// ── Theme toggle ───────────────────────────────────────────────────────────
+const themeBtn = document.getElementById("theme-toggle");
+if (themeBtn) {
+  themeBtn.addEventListener("click", () => {
+    isDark = !isDark;
+    document.documentElement.setAttribute(
+      "data-theme",
+      isDark ? "dark" : "light",
+    );
+    themeBtn.textContent = isDark ? "LIGHT" : "DARK";
+  });
+}
+
 // ── Screenshot control API (used by automated tooling only) ───────────────
 window.__pride = {
   setFlag(n) {
@@ -567,8 +590,11 @@ window.__pride = {
     applyTargets(FLAGS[fidx]);
     sparks = new Float32Array(P.length);
     for (const p of P) {
-      p.x = p.tx; p.y = p.ty;
-      p.r = p.tr; p.g = p.tg; p.b = p.tb;
+      p.x = p.tx;
+      p.y = p.ty;
+      p.r = p.tr;
+      p.g = p.tg;
+      p.b = p.tb;
       p.a = 1;
     }
     nameEl.textContent = FLAGS[fidx].name;
@@ -576,5 +602,7 @@ window.__pride = {
     phase = "display";
     phaseT = performance.now();
   },
-  get flagCount() { return FLAGS.length; },
+  get flagCount() {
+    return FLAGS.length;
+  },
 };
